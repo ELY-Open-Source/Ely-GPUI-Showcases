@@ -61,7 +61,7 @@ const bad = [
   ["an encoded host", { app: { ...good, website: "https://good.example&commat;evil.com/" } }, /plain host/],
   ["a GitHub source with a trailing slash", { app: { ...good, source: "https://github.com/ada/tally/" } }, /github.com\/owner\/repo/],
   ["a GitHub source with a query", { app: { ...good, source: "https://github.com/ada/tally?tab=readme-ov-file" } }, /github.com\/owner\/repo/],
-  ["a GitHub source on www", { app: { ...good, source: "https://www.github.com/ada/tally" } }, /github.com/owner/repo/],
+  ["a GitHub source on www", { app: { ...good, source: "https://www.github.com/ada/tally" } }, /github.com\/owner\/repo/],
   ["a host with credentials", { app: { ...good, website: "https://good.example@evil.com/" } }, /plain host/],
   ["a long description", { app: { ...good, description: "a".repeat(281) } }, /281 weighted characters/],
   ["stars without their time", { app: { ...good, stars: 3 } }, /go together/],
