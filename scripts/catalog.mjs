@@ -1,7 +1,8 @@
 import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { crc32, inflateSync } from "node:zlib";
+import { inflateSync } from "node:zlib";
 import { Lexer } from "marked";
+import { PNG as Decoder } from "pngjs";
 import twitter from "twitter-text";
 
 export const CATEGORIES = {
@@ -20,7 +21,7 @@ const REQUIRED = ["id", "name", "author", "description", "category", "platforms"
 const OPTIONAL = ["building", "stars", "starsUpdatedAt"];
 const TIME = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d+)?(Z|[+-]\d\d:\d\d)$/;
 const ENTITY = /&(#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/i;
-const URLISH = /[a-z][a-z0-9+.-]*:\/\/[^\s<>()\[\]"'`]*/gi;
+const URLISH = /[a-z][a-z0-9+.-]*:\/\/[^\s<>\[\]"'`]*/gi;
 const TOKENS = new Set(["space", "heading", "paragraph", "text", "strong", "em", "del", "br", "hr", "blockquote", "list", "list_item", "table", "escape", "checkbox", "def", "link", "image"]);
 
 /** Twitter's weighted length. */
@@ -32,7 +33,16 @@ function time(value) {
   if (!m) return false;
   const [y, mo, d, h, mi, sec] = m.slice(1, 7).map(Number);
   const at = new Date(Date.UTC(y, mo - 1, d, h, mi, sec));
-  return at.getUTCMonth() === mo - 1 && at.getUTCDate() === d && h < 24 && mi < 60 && sec < 60;
+  const zone = m[8] === "Z" || (Number(m[8].slice(1, 3)) < 24 && Number(m[8].slice(4)) < 60);
+  return zone && at.getUTCMonth() === mo - 1 && at.getUTCDate() === d && h < 24 && mi < 60 && sec < 60 && !Number.isNaN(Date.parse(value));
+}
+
+/** An address as written in prose, less the punctuation that ends a sentence. */
+function trim(url) {
+  let out = url.replace(/[.,;:!?*_~]+$/, "");
+  const count = (c) => out.split(c).length - 1;
+  while (out.endsWith(")") && count(")") > count("(")) out = out.slice(0, -1).replace(/[.,;:!?*_~]+$/, "");
+  return out;
 }
 
 function fail(where, what) {
@@ -63,31 +73,42 @@ export function github(source) {
   return m ? { owner: m[1], repo: m[2] } : null;
 }
 
+const CHANNELS = { 0: 1, 2: 3, 3: 1, 4: 2, 6: 4 };
+const ADAM7 = [[0, 0, 8, 8], [4, 0, 8, 8], [0, 4, 4, 8], [2, 0, 4, 4], [0, 2, 2, 4], [1, 0, 2, 2], [0, 1, 1, 2]];
+
+/** The bytes a PNG's image data must inflate to, from its header. */
+function rasterBytes(bytes) {
+  const [w, h, depth, color, interlace] = [bytes.readUInt32BE(16), bytes.readUInt32BE(20), bytes[24], bytes[25], bytes[28]];
+  const row = (width) => 1 + Math.ceil((width * depth * CHANNELS[color]) / 8);
+  if (!interlace) return h * row(w);
+  return ADAM7.reduce((n, [x, y, dx, dy]) => {
+    const [pw, ph] = [Math.ceil((w - x) / dx), Math.ceil((h - y) / dy)];
+    return pw > 0 && ph > 0 ? n + ph * row(pw) : n;
+  }, 0);
+}
+
+/** The PNG's image data, inflated. */
+function raster(bytes) {
+  const data = [];
+  for (let at = 8; at + 8 <= bytes.length; ) {
+    const length = bytes.readUInt32BE(at);
+    if (bytes.toString("latin1", at + 4, at + 8) === "IDAT") data.push(bytes.subarray(at + 8, at + 8 + length));
+    at += 12 + length;
+  }
+  return inflateSync(Buffer.concat(data));
+}
+
 function png(where, dir, name) {
   if (!FILE.test(name) || !name.endsWith(".png")) fail(where, `${name} must be a lowercase .png file name in the app folder`);
   const path = join(dir, name);
   if (!existsSync(path)) fail(where, `${name} is missing`);
   const bytes = readFileSync(path);
   if (!bytes.subarray(0, 8).equals(PNG)) fail(where, `${name} is not a PNG`);
-  const types = [];
-  const data = [];
-  for (let at = 8; at < bytes.length; ) {
-    if (at + 12 > bytes.length) fail(where, `${name} is cut short`);
-    const length = bytes.readUInt32BE(at);
-    const end = at + 8 + length;
-    if (end + 4 > bytes.length) fail(where, `${name} is cut short`);
-    const type = bytes.toString("latin1", at + 4, at + 8);
-    if (crc32(bytes.subarray(at + 4, end)) !== bytes.readUInt32BE(end)) fail(where, `${name} has a bad ${type} checksum`);
-    if (type === "IHDR" && (length !== 13 || !bytes.readUInt32BE(at + 8) || !bytes.readUInt32BE(at + 12))) fail(where, `${name} has a bad header`);
-    if (type === "IDAT") data.push(bytes.subarray(at + 8, end));
-    types.push(type);
-    at = end + 4;
-  }
-  if (types[0] !== "IHDR" || types.at(-1) !== "IEND" || !data.length) fail(where, `${name} is not a whole PNG`);
   try {
-    inflateSync(Buffer.concat(data));
+    if (raster(bytes).length !== rasterBytes(bytes)) throw new Error("image data does not fill the image");
+    Decoder.sync.read(bytes);
   } catch (error) {
-    fail(where, `${name} has broken image data: ${error.message}`);
+    fail(where, `${name} does not decode: ${error.message}`);
   }
 }
 
@@ -135,7 +156,7 @@ function readme(dir, app) {
   const markdown = bytes.toString("utf8");
   const links = [app.website, app.source].filter(Boolean);
   if (ENTITY.test(markdown)) fail(where, `write characters as they are, not as references: ${markdown.match(ENTITY)[0]}`);
-  for (const url of markdown.replaceAll("\\", "").match(URLISH) ?? []) if (!links.includes(url)) fail(where, `addresses go only to the website or source: ${url}`);
+  for (const url of markdown.replaceAll("\\", "").match(URLISH) ?? []) if (!links.includes(trim(url))) fail(where, `addresses go only to the website or source: ${url}`);
   const walk = (tokens) => {
     for (const t of tokens) {
       if (!TOKENS.has(t.type)) fail(where, `${t.type === "html" ? "raw HTML" : t.type === "code" ? "a code block" : t.type} is not allowed: ${t.raw.trim().slice(0, 60)}`);

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "marked": "18.0.14",
+    "pngjs": "7.0.0",
     "twitter-text": "3.1.0"
   }
 }

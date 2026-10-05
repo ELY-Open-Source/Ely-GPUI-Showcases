@@ -40,7 +40,7 @@ Use your desktop's window capture, such as GNOME's Print Screen and its Window m
 - Write characters as they are, not as `&...;` references.
 - Any address in the text is the `website` or the `source`.
 
-`pnpm validate` checks the size, the links, the images and the markup.
+`pnpm validate` checks the size, the links, the addresses, the images and the markup. Maintainers read the words: a README that tells how to install is sent back.
 
 ## Pull request
 

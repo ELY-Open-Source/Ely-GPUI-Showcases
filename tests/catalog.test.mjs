@@ -15,9 +15,13 @@ function chunk(type, data) {
   return Buffer.concat([head, data, sum]);
 }
 
-/** A one-pixel gray PNG. */
-const header = Buffer.from([0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0]);
-const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", header), chunk("IDAT", deflateSync(Buffer.from([0, 128]))), chunk("IEND", Buffer.alloc(0))]);
+/** A gray PNG `side` pixels square whose data is one pixel, its scanline led by `filter`. */
+function png(filter, side = 1) {
+  const header = Buffer.from([0, 0, 0, side, 0, 0, 0, side, 8, 0, 0, 0, 0]);
+  const image = deflateSync(Buffer.from([filter, 1]));
+  return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", header), chunk("IDAT", image), chunk("IEND", Buffer.alloc(0))]);
+}
+const PNG = png(0);
 const broken = Buffer.from(PNG);
 broken[broken.length - 20] ^= 0xff;
 
@@ -55,6 +59,12 @@ test("a good app reads back with its README", () => {
   assert.deepEqual(featured, ["tally"]);
 });
 
+test("addresses in prose may end a sentence or hold parentheses", () => {
+  const app = { ...good, website: "https://tally.app/foo(bar)" };
+  const readme = "See https://github.com/ada/tally. Or [the site](https://tally.app/foo(bar)), (https://github.com/ada/tally).\n";
+  assert.equal(read(catalog({ app, files: { "README.md": readme } })).apps.length, 1);
+});
+
 test("the empty catalog reads", () => {
   const root = mkdtempSync(join(tmpdir(), "showcase-"));
   mkdirSync(join(root, "apps"));
@@ -76,11 +86,15 @@ const bad = [
   ["a remote preview", { app: { ...good, previews: ["https://x.io/a.png"] } }, /lowercase .png file name/],
   ["a missing preview", { app: { ...good, previews: ["preview1.png"] } }, /preview1.png is missing/],
   ["a preview that is no PNG", { app: { ...good, previews: ["fake.png"] }, files: { "fake.png": "GIF89a" } }, /not a PNG/],
-  ["a PNG cut short", { app: { ...good, previews: ["cut.png"] }, files: { "cut.png": PNG.subarray(0, 40) } }, /cut short/],
-  ["a PNG with a bad checksum", { app: { ...good, previews: ["bad.png"] }, files: { "bad.png": broken } }, /checksum/],
+  ["a PNG cut short", { app: { ...good, previews: ["cut.png"] }, files: { "cut.png": PNG.subarray(0, 40) } }, /does not decode/],
+  ["a PNG with a bad checksum", { app: { ...good, previews: ["bad.png"] }, files: { "bad.png": broken } }, /does not decode/],
+  ["a PNG with too little data", { app: { ...good, previews: ["short.png"] }, files: { "short.png": png(0, 4) } }, /does not fill the image/],
+  ["a PNG with an unknown filter", { app: { ...good, previews: ["odd.png"] }, files: { "odd.png": png(99) } }, /does not decode/],
   ["a category list", { app: { ...good, category: ["work"] } }, /category must be one of/],
   ["no publishedAt", { app: { ...good, publishedAt: undefined } }, /publishedAt is required/],
   ["a time without its zone", { app: { ...good, publishedAt: "2026-10-04T00:00:00" } }, /with its zone/],
+  ["a zone past 23 hours", { app: { ...good, publishedAt: "2026-10-04T00:00:00+99:99" } }, /with its zone/],
+  ["a zone past 59 minutes", { app: { ...good, publishedAt: "2026-10-04T00:00:00+01:60" } }, /with its zone/],
   ["a day that does not exist", { app: { ...good, publishedAt: "2026-02-30T00:00:00Z" } }, /with its zone/],
   ["an encoded host", { app: { ...good, website: "https://good.example&commat;evil.com/" } }, /plain host/],
   ["a host with credentials", { app: { ...good, website: "https://good.example@evil.com/" } }, /plain host/],
