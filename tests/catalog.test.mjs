@@ -65,6 +65,12 @@ test("addresses in prose may end a sentence or hold parentheses", () => {
   assert.equal(read(catalog({ app, files: { "README.md": readme } })).apps.length, 1);
 });
 
+test("an address may end in punctuation of its own", () => {
+  const app = { ...good, source: "https://github.com/ada/tally_", website: "https://tally.app/?" };
+  const readme = "[Source](https://github.com/ada/tally_) and [site](https://tally.app/?).\n";
+  assert.equal(read(catalog({ app, files: { "README.md": readme } })).apps.length, 1);
+});
+
 test("the empty catalog reads", () => {
   const root = mkdtempSync(join(tmpdir(), "showcase-"));
   mkdirSync(join(root, "apps"));
@@ -115,6 +121,7 @@ const bad = [
   ["a picture outside the folder in a README", { files: { "README.md": "![x](../a.png)\n" } }, /lowercase .png file name/],
   ["inline code in a README", { files: { "README.md": "Run `cargo install tally`.\n" } }, /codespan is not allowed/],
   ["a character reference in a README", { files: { "README.md": "Go https&#58;//evil.io/ now\n" } }, /not as references/],
+  ["an address that runs on past the website", { files: { "README.md": "See https://github.com/ada/tally.evil.io now\n" } }, /addresses go only/],
   ["an escaped address in a README", { files: { "README.md": "Go https\://evil.io/ now\n" } }, /addresses go only/],
   ["a large README", { files: { "README.md": "a".repeat(10241) } }, /over 10240/],
 ];

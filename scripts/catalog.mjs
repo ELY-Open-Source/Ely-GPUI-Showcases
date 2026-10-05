@@ -37,14 +37,6 @@ function time(value) {
   return zone && at.getUTCMonth() === mo - 1 && at.getUTCDate() === d && h < 24 && mi < 60 && sec < 60 && !Number.isNaN(Date.parse(value));
 }
 
-/** An address as written in prose, less the punctuation that ends a sentence. */
-function trim(url) {
-  let out = url.replace(/[.,;:!?*_~]+$/, "");
-  const count = (c) => out.split(c).length - 1;
-  while (out.endsWith(")") && count(")") > count("(")) out = out.slice(0, -1).replace(/[.,;:!?*_~]+$/, "");
-  return out;
-}
-
 function fail(where, what) {
   throw new Error(`${where}: ${what}`);
 }
@@ -156,7 +148,7 @@ function readme(dir, app) {
   const markdown = bytes.toString("utf8");
   const links = [app.website, app.source].filter(Boolean);
   if (ENTITY.test(markdown)) fail(where, `write characters as they are, not as references: ${markdown.match(ENTITY)[0]}`);
-  for (const url of markdown.replaceAll("\\", "").match(URLISH) ?? []) if (!links.includes(trim(url))) fail(where, `addresses go only to the website or source: ${url}`);
+  for (const url of markdown.replaceAll("\\", "").match(URLISH) ?? []) if (!links.some((l) => url.startsWith(l) && /^[.,;:!?*_~)]*$/.test(url.slice(l.length)))) fail(where, `addresses go only to the website or source: ${url}`);
   const walk = (tokens) => {
     for (const t of tokens) {
       if (!TOKENS.has(t.type)) fail(where, `${t.type === "html" ? "raw HTML" : t.type === "code" ? "a code block" : t.type} is not allowed: ${t.raw.trim().slice(0, 60)}`);
