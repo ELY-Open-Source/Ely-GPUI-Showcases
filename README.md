@@ -32,6 +32,7 @@ apps/
   "platforms": ["macOS", "Linux"],
   "website": null,
   "source": "https://github.com/ada/tally",
+  "publishedAt": "2026-10-04T12:00:00Z",
   "previews": ["preview0.png", "preview1.png"]
 }
 ```
@@ -41,13 +42,13 @@ apps/
 | `id` | Lowercase letters, digits, single hyphens. Matches the folder. |
 | `name` | The app's name, in its own capitals. |
 | `author` | A person or an organization. |
-| `description` | At most 280 weighted characters, counted as Twitter counts them. |
+| `description` | At most 280 weighted characters, counted by [twitter-text](https://github.com/twitter/twitter-text): an address counts 23, CJK and emoji 2. |
 | `category` | `dev` (Developer Tools), `terminal` (Terminal & Network), `system` (System & Desktop) or `work` (Productivity & Media). |
 | `platforms` | Some of `macOS`, `Windows`, `Linux`, `Web`. |
-| `website`, `source` | Canonical `https` addresses, or `null`. One at least. |
+| `website`, `source` | Canonical `https` addresses with a plain host, or `null`. One at least. |
 | `previews` | PNG file names in the folder. The first is the cover. |
 | `building` | Optional. `true` while the app is not out yet. |
-| `publishedAt` | Optional. ISO 8601. Maintainers set it. |
+| `publishedAt` | ISO 8601 with a zone, such as `2026-10-04T12:00:00Z`: when the app joins the catalog. Maintainers confirm it; later updates keep it. |
 | `stars`, `starsUpdatedAt` | CI writes them for GitHub sources. Leave them out. |
 
 Unknown fields fail validation.

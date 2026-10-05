@@ -8,6 +8,7 @@
     "validate": "node scripts/validate.mjs"
   },
   "dependencies": {
-    "marked": "18.0.14"
+    "marked": "18.0.14",
+    "twitter-text": "3.1.0"
   }
 }

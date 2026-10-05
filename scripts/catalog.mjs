@@ -1,6 +1,8 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, lstatSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { crc32, inflateSync } from "node:zlib";
 import { Lexer } from "marked";
+import twitter from "twitter-text";
 
 export const CATEGORIES = {
   dev: "Developer Tools",
@@ -14,19 +16,23 @@ export const README_BYTES = 10240;
 const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const FILE = /^[a-z0-9][a-z0-9._-]*$/;
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-const REQUIRED = ["id", "name", "author", "description", "category", "platforms", "website", "source", "previews"];
-const OPTIONAL = ["building", "publishedAt", "stars", "starsUpdatedAt"];
-const TOKENS = new Set(["space", "heading", "paragraph", "text", "strong", "em", "del", "codespan", "br", "hr", "blockquote", "list", "list_item", "table", "escape", "checkbox", "def", "link", "image"]);
+const REQUIRED = ["id", "name", "author", "description", "category", "platforms", "website", "source", "publishedAt", "previews"];
+const OPTIONAL = ["building", "stars", "starsUpdatedAt"];
+const TIME = /^(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d+)?(Z|[+-]\d\d:\d\d)$/;
+const ENTITY = /&(#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);/i;
+const URLISH = /[a-z][a-z0-9+.-]*:\/\/[^\s<>()\[\]"'`]*/gi;
+const TOKENS = new Set(["space", "heading", "paragraph", "text", "strong", "em", "del", "br", "hr", "blockquote", "list", "list_item", "table", "escape", "checkbox", "def", "link", "image"]);
 
-/** Twitter's weighted length: these ranges count 1, all else 2. */
-export function weighted(text) {
-  const light = [[0, 4351], [8192, 8205], [8208, 8223], [8242, 8247]];
-  let n = 0;
-  for (const ch of text.normalize("NFC")) {
-    const c = ch.codePointAt(0);
-    n += light.some(([a, b]) => c >= a && c <= b) ? 1 : 2;
-  }
-  return n;
+/** Twitter's weighted length. */
+export const weighted = (text) => twitter.parseTweet(text).weightedLength;
+
+/** An ISO 8601 time with its zone, on a real date. */
+function time(value) {
+  const m = typeof value === "string" && value.match(TIME);
+  if (!m) return false;
+  const [y, mo, d, h, mi, sec] = m.slice(1, 7).map(Number);
+  const at = new Date(Date.UTC(y, mo - 1, d, h, mi, sec));
+  return at.getUTCMonth() === mo - 1 && at.getUTCDate() === d && h < 24 && mi < 60 && sec < 60;
 }
 
 function fail(where, what) {
@@ -46,7 +52,9 @@ function address(where, value, field) {
   } catch {
     fail(where, `${field} is not a URL: ${value}`);
   }
-  if (url.protocol !== "https:" || url.href !== value) fail(where, `${field} must be a canonical https URL: ${value}`);
+  if (url.protocol !== "https:" || url.href !== value || url.username || url.password || ENTITY.test(value) || !/^[a-z0-9.-]+$/.test(url.hostname)) {
+    fail(where, `${field} must be a canonical https URL with a plain host: ${value}`);
+  }
 }
 
 /** The owner and repo of a GitHub source, or null. */
@@ -58,8 +66,29 @@ export function github(source) {
 function png(where, dir, name) {
   if (!FILE.test(name) || !name.endsWith(".png")) fail(where, `${name} must be a lowercase .png file name in the app folder`);
   const path = join(dir, name);
-  if (!existsSync(path) || !statSync(path).isFile()) fail(where, `${name} is missing`);
-  if (!readFileSync(path).subarray(0, 8).equals(PNG)) fail(where, `${name} is not a PNG`);
+  if (!existsSync(path)) fail(where, `${name} is missing`);
+  const bytes = readFileSync(path);
+  if (!bytes.subarray(0, 8).equals(PNG)) fail(where, `${name} is not a PNG`);
+  const types = [];
+  const data = [];
+  for (let at = 8; at < bytes.length; ) {
+    if (at + 12 > bytes.length) fail(where, `${name} is cut short`);
+    const length = bytes.readUInt32BE(at);
+    const end = at + 8 + length;
+    if (end + 4 > bytes.length) fail(where, `${name} is cut short`);
+    const type = bytes.toString("latin1", at + 4, at + 8);
+    if (crc32(bytes.subarray(at + 4, end)) !== bytes.readUInt32BE(end)) fail(where, `${name} has a bad ${type} checksum`);
+    if (type === "IHDR" && (length !== 13 || !bytes.readUInt32BE(at + 8) || !bytes.readUInt32BE(at + 12))) fail(where, `${name} has a bad header`);
+    if (type === "IDAT") data.push(bytes.subarray(at + 8, end));
+    types.push(type);
+    at = end + 4;
+  }
+  if (types[0] !== "IHDR" || types.at(-1) !== "IEND" || !data.length) fail(where, `${name} is not a whole PNG`);
+  try {
+    inflateSync(Buffer.concat(data));
+  } catch (error) {
+    fail(where, `${name} has broken image data: ${error.message}`);
+  }
 }
 
 function manifest(dir, id) {
@@ -78,7 +107,7 @@ function manifest(dir, id) {
   if (app.id !== id) fail(where, `id ${JSON.stringify(app.id)} must match the folder ${id}`);
   for (const key of ["name", "author", "description"]) text(where, app[key], key);
   if (weighted(app.description) > 280) fail(where, `description is ${weighted(app.description)} weighted characters, over 280`);
-  if (!Object.hasOwn(CATEGORIES, app.category)) fail(where, `category must be one of ${Object.keys(CATEGORIES).join(", ")}`);
+  if (typeof app.category !== "string" || !Object.hasOwn(CATEGORIES, app.category)) fail(where, `category must be one of ${Object.keys(CATEGORIES).join(", ")}`);
   if (!Array.isArray(app.platforms) || !app.platforms.length) fail(where, "platforms must be a non-empty list");
   for (const p of app.platforms) if (!PLATFORMS.includes(p)) fail(where, `unknown platform ${p}; use ${PLATFORMS.join(", ")}`);
   if (new Set(app.platforms).size !== app.platforms.length) fail(where, "platforms repeat");
@@ -89,9 +118,7 @@ function manifest(dir, id) {
   if (new Set(app.previews).size !== app.previews.length) fail(where, "previews repeat");
   for (const name of app.previews) png(where, dir, name);
   if ("building" in app && typeof app.building !== "boolean") fail(where, "building must be true or false");
-  for (const key of ["publishedAt", "starsUpdatedAt"]) {
-    if (key in app && (typeof app[key] !== "string" || Number.isNaN(Date.parse(app[key])) || !/^\d{4}-\d\d-\d\dT/.test(app[key]))) fail(where, `${key} must be an ISO 8601 time`);
-  }
+  for (const key of ["publishedAt", "starsUpdatedAt"]) if (key in app && !time(app[key])) fail(where, `${key} must be an ISO 8601 time with its zone`);
   if ("stars" in app !== "starsUpdatedAt" in app) fail(where, "stars and starsUpdatedAt go together");
   if ("stars" in app && (!Number.isInteger(app.stars) || app.stars < 0)) fail(where, "stars must be a whole number");
   if ("stars" in app && !github(app.source)) fail(where, "stars need a GitHub source");
@@ -107,6 +134,8 @@ function readme(dir, app) {
   if (bytes.length > README_BYTES) fail(where, `${bytes.length} bytes, over ${README_BYTES}`);
   const markdown = bytes.toString("utf8");
   const links = [app.website, app.source].filter(Boolean);
+  if (ENTITY.test(markdown)) fail(where, `write characters as they are, not as references: ${markdown.match(ENTITY)[0]}`);
+  for (const url of markdown.replaceAll("\\", "").match(URLISH) ?? []) if (!links.includes(url)) fail(where, `addresses go only to the website or source: ${url}`);
   const walk = (tokens) => {
     for (const t of tokens) {
       if (!TOKENS.has(t.type)) fail(where, `${t.type === "html" ? "raw HTML" : t.type === "code" ? "a code block" : t.type} is not allowed: ${t.raw.trim().slice(0, 60)}`);
@@ -128,10 +157,11 @@ export function read(root) {
   for (const entry of readdirSync(appsDir).sort()) {
     if (entry === ".gitkeep") continue;
     const dir = join(appsDir, entry);
-    if (!statSync(dir).isDirectory()) fail(`apps/${entry}`, "only app folders belong in apps/");
+    if (!lstatSync(dir).isDirectory()) fail(`apps/${entry}`, "only app folders belong in apps/, and no links");
     if (!ID.test(entry)) fail(`apps/${entry}`, "folder names are lowercase kebab-case");
     for (const file of readdirSync(dir)) {
       if (!["manifest.json", "README.md"].includes(file) && !FILE.test(file)) fail(`apps/${entry}/${file}`, "file names are lowercase");
+      if (!lstatSync(join(dir, file)).isFile()) fail(`apps/${entry}/${file}`, "only plain files belong in an app folder");
     }
     const app = manifest(dir, entry);
     apps.push({ ...app, readme: readme(dir, app) });

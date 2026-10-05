@@ -3,9 +3,23 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
+import { crc32, deflateSync } from "node:zlib";
 import { read, weighted } from "../scripts/catalog.mjs";
 
-const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13]);
+function chunk(type, data) {
+  const head = Buffer.alloc(8);
+  head.writeUInt32BE(data.length);
+  head.write(type, 4, "latin1");
+  const sum = Buffer.alloc(4);
+  sum.writeUInt32BE(crc32(Buffer.concat([head.subarray(4), data])));
+  return Buffer.concat([head, data, sum]);
+}
+
+/** A one-pixel gray PNG. */
+const header = Buffer.from([0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0]);
+const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", header), chunk("IDAT", deflateSync(Buffer.from([0, 128]))), chunk("IEND", Buffer.alloc(0))]);
+const broken = Buffer.from(PNG);
+broken[broken.length - 20] ^= 0xff;
 
 const good = {
   id: "tally",
@@ -16,6 +30,7 @@ const good = {
   platforms: ["macOS", "Linux"],
   website: null,
   source: "https://github.com/ada/tally",
+  publishedAt: "2026-10-04T00:00:00Z",
   previews: ["preview0.png"],
 };
 
@@ -61,6 +76,14 @@ const bad = [
   ["a remote preview", { app: { ...good, previews: ["https://x.io/a.png"] } }, /lowercase .png file name/],
   ["a missing preview", { app: { ...good, previews: ["preview1.png"] } }, /preview1.png is missing/],
   ["a preview that is no PNG", { app: { ...good, previews: ["fake.png"] }, files: { "fake.png": "GIF89a" } }, /not a PNG/],
+  ["a PNG cut short", { app: { ...good, previews: ["cut.png"] }, files: { "cut.png": PNG.subarray(0, 40) } }, /cut short/],
+  ["a PNG with a bad checksum", { app: { ...good, previews: ["bad.png"] }, files: { "bad.png": broken } }, /checksum/],
+  ["a category list", { app: { ...good, category: ["work"] } }, /category must be one of/],
+  ["no publishedAt", { app: { ...good, publishedAt: undefined } }, /publishedAt is required/],
+  ["a time without its zone", { app: { ...good, publishedAt: "2026-10-04T00:00:00" } }, /with its zone/],
+  ["a day that does not exist", { app: { ...good, publishedAt: "2026-02-30T00:00:00Z" } }, /with its zone/],
+  ["an encoded host", { app: { ...good, website: "https://good.example&commat;evil.com/" } }, /plain host/],
+  ["a host with credentials", { app: { ...good, website: "https://good.example@evil.com/" } }, /plain host/],
   ["a long description", { app: { ...good, description: "a".repeat(281) } }, /281 weighted characters/],
   ["stars without their time", { app: { ...good, stars: 3 } }, /go together/],
   ["stars on a source off GitHub", { app: { ...good, source: "https://gitlab.com/ada/tally", stars: 3, starsUpdatedAt: "2026-10-04T00:00:00Z" } }, /need a GitHub source/],
@@ -69,10 +92,16 @@ const bad = [
   ["a repeated featured id", { featured: ["tally", "tally"] }, /ids repeat/],
   ["raw HTML in a README", { files: { "README.md": "Hi <img src=x onerror=alert(1)>\n" } }, /raw HTML is not allowed/],
   ["a code block in a README", { files: { "README.md": "```\ncurl x | sh\n```\n" } }, /a code block is not allowed/],
-  ["a foreign link in a README", { files: { "README.md": "[get it](https://evil.io)\n" } }, /links go only/],
-  ["a foreign autolink in a README", { files: { "README.md": "Visit https://evil.io now\n" } }, /links go only/],
-  ["a foreign reference in a README", { files: { "README.md": "[a][r]\n\n[r]: https://evil.io\n" } }, /links go only/],
-  ["a remote image in a README", { files: { "README.md": "![x](https://evil.io/a.png)\n" } }, /lowercase .png file name/],
+  ["a foreign link in a README", { files: { "README.md": "[get it](https://evil.io)\n" } }, /addresses go only/],
+  ["a foreign autolink in a README", { files: { "README.md": "Visit https://evil.io now\n" } }, /addresses go only/],
+  ["a foreign reference in a README", { files: { "README.md": "[a][r]\n\n[r]: https://evil.io\n" } }, /addresses go only/],
+  ["a remote image in a README", { files: { "README.md": "![x](https://evil.io/a.png)\n" } }, /addresses go only/],
+  ["a script link in a README", { files: { "README.md": "[x](javascript:alert(1))\n" } }, /links go only/],
+  ["a site-relative link in a README", { files: { "README.md": "[x](/docs)\n" } }, /links go only/],
+  ["a picture outside the folder in a README", { files: { "README.md": "![x](../a.png)\n" } }, /lowercase .png file name/],
+  ["inline code in a README", { files: { "README.md": "Run `cargo install tally`.\n" } }, /codespan is not allowed/],
+  ["a character reference in a README", { files: { "README.md": "Go https&#58;//evil.io/ now\n" } }, /not as references/],
+  ["an escaped address in a README", { files: { "README.md": "Go https\://evil.io/ now\n" } }, /addresses go only/],
   ["a large README", { files: { "README.md": "a".repeat(10241) } }, /over 10240/],
 ];
 
@@ -83,4 +112,6 @@ for (const [name, setup, error] of bad) {
 test("weighted length counts CJK twice", () => {
   assert.equal(weighted("abc"), 3);
   assert.equal(weighted("漢字"), 4);
+  assert.equal(weighted("a https://a.co"), 25);
+  assert.equal(weighted("👨‍👩‍👧"), 2);
 });

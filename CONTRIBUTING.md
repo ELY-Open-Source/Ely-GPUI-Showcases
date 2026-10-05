@@ -36,7 +36,9 @@ Use your desktop's window capture, such as GNOME's Print Screen and its Window m
 - Describe the product: what it does, how it works, who it is for.
 - Links go only to the manifest's `website` or `source`, exactly.
 - Images are PNG files in the app folder, by name.
-- No raw HTML, no code blocks, no install steps.
+- No raw HTML, no code, inline or in blocks, and no install steps.
+- Write characters as they are, not as `&...;` references.
+- Any address in the text is the `website` or the `source`.
 
 `pnpm validate` checks the size, the links, the images and the markup.
 
