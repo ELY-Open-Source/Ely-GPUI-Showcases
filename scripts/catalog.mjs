@@ -126,7 +126,7 @@ function manifest(dir, id) {
   if (new Set(app.platforms).size !== app.platforms.length) fail(where, "platforms repeat");
   address(where, app.website, "website");
   address(where, app.source, "source");
-  if (app.source && new URL(app.source).hostname === "github.com" && !github(app.source)) fail(where, `a GitHub source is https://github.com/owner/repo: ${app.source}`);
+  if (app.source && ["github.com", "www.github.com"].includes(new URL(app.source).hostname) && !github(app.source)) fail(where, `a GitHub source is https://github.com/owner/repo: ${app.source}`);
   if (app.website === null && app.source === null) fail(where, "website or source is required");
   if (!Array.isArray(app.previews) || !app.previews.length) fail(where, "previews must be a non-empty list");
   if (new Set(app.previews).size !== app.previews.length) fail(where, "previews repeat");
