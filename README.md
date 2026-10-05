@@ -57,6 +57,10 @@ Unknown fields fail validation.
 
 `featured.json` lists app ids in order. Those apps come first. Maintainers choose them. The rest sort newest first, then by stars.
 
+## Stars
+
+On every push to `main` and each Monday, CI asks GitHub for each GitHub source's stars and commits any change. `starsUpdatedAt` moves only when the count does. `pnpm stars` does the same locally with `GITHUB_TOKEN` set.
+
 ## How the site uses this
 
 The Ely site pins a commit of this repo. Its build downloads that commit, runs `scripts/catalog.mjs`, and copies manifests, previews and READMEs. A catalog that fails here fails the site's build.
