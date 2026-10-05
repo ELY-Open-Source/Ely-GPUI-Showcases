@@ -3,7 +3,6 @@ name: Catalog
 on:
   pull_request:
   push:
-    branches: [main]
   schedule:
     # Mondays, 00:00 UTC.
     - cron: "0 0 * * 1"

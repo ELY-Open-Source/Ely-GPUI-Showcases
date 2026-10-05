@@ -45,7 +45,7 @@ apps/
 | `description` | At most 280 weighted characters, counted by [twitter-text](https://github.com/twitter/twitter-text): an address counts 23, CJK and emoji 2. |
 | `category` | `dev` (Developer Tools), `terminal` (Terminal & Network), `system` (System & Desktop) or `work` (Productivity & Media). |
 | `platforms` | Some of `macOS`, `Windows`, `Linux`, `Web`. |
-| `website`, `source` | Canonical `https` addresses with a plain host, or `null`. One at least. |
+| `website`, `source` | Canonical `https` addresses with a plain host, or `null`. One at least. A GitHub source is `https://github.com/owner/repo`, nothing after. |
 | `previews` | PNG file names in the folder. The first is the cover. |
 | `building` | Optional. `true` while the app is not out yet. |
 | `publishedAt` | ISO 8601 with a zone, such as `2026-10-04T12:00:00Z`: when the app joins the catalog. Maintainers confirm it; later updates keep it. |

@@ -59,6 +59,8 @@ const bad = [
   ["a zone past 59 minutes", { app: { ...good, publishedAt: "2026-10-04T00:00:00+01:60" } }, /with its zone/],
   ["a day that does not exist", { app: { ...good, publishedAt: "2026-02-30T00:00:00Z" } }, /with its zone/],
   ["an encoded host", { app: { ...good, website: "https://good.example&commat;evil.com/" } }, /plain host/],
+  ["a GitHub source with a trailing slash", { app: { ...good, source: "https://github.com/ada/tally/" } }, /github.com\/owner\/repo/],
+  ["a GitHub source with a query", { app: { ...good, source: "https://github.com/ada/tally?tab=readme-ov-file" } }, /github.com\/owner\/repo/],
   ["a host with credentials", { app: { ...good, website: "https://good.example@evil.com/" } }, /plain host/],
   ["a long description", { app: { ...good, description: "a".repeat(281) } }, /281 weighted characters/],
   ["stars without their time", { app: { ...good, stars: 3 } }, /go together/],
