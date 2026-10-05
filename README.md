@@ -59,7 +59,7 @@ Unknown fields fail validation.
 
 ## Stars
 
-On every push to `main` and each Monday, CI asks GitHub for each GitHub source's stars and commits any change. `starsUpdatedAt` moves only when the count does. `pnpm stars` does the same locally with `GITHUB_TOKEN` set.
+On every push to `main` and each Monday, CI asks GitHub for each GitHub source's stars and commits any change. `starsUpdatedAt` moves only when the count does. `pnpm run update-stars` does the same locally with `GITHUB_TOKEN` set.
 
 ## How the site uses this
 
