@@ -1,0 +1,20 @@
+{
+  "id": "token-ledger",
+  "name": "TokenLedger",
+  "author": "nanami-0713",
+  "description": "One ledger for every model call on the machine: tokens, list-price cost and plan credits, read from the local logs of ZCode, Codex, Claude Code and friends, then drawn in Ely charts.",
+  "category": "dev",
+  "platforms": [
+    "macOS"
+  ],
+  "website": null,
+  "source": "https://github.com/nanami-0713/token-ledger",
+  "publishedAt": "2026-10-06T00:00:00+08:00",
+  "previews": [
+    "light.png",
+    "models.png",
+    "sources.png"
+  ],
+  "stars": 2,
+  "starsUpdatedAt": "2026-10-09T20:19:25.654Z"
+}
