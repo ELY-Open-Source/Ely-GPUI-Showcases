@@ -20,13 +20,12 @@ export async function refresh(root, get, now) {
   return changed;
 }
 
-/** A repository's stars from GitHub's API. */
+/** A repository's stars from GitHub's API, signed in when GITHUB_TOKEN holds a GitHub token. */
 async function stargazers({ owner, repo }) {
   const token = process.env.GITHUB_TOKEN;
-  if (!token) throw new Error("stars: GITHUB_TOKEN is not set");
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-    headers: { accept: "application/vnd.github+json", authorization: `Bearer ${token}`, "x-github-api-version": "2022-11-28" },
-  });
+  const headers = { accept: "application/vnd.github+json", "x-github-api-version": "2022-11-28" };
+  if (token) headers.authorization = `Bearer ${token}`;
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
   if (!res.ok) throw new Error(`stars: ${owner}/${repo} answered ${res.status} ${await res.text()}`);
   return (await res.json()).stargazers_count;
 }

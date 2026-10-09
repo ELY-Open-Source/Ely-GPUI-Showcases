@@ -49,7 +49,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run update-stars
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # A GitHub token, optional: this server's own token means nothing to GitHub.
+          GITHUB_TOKEN: ${{ secrets.STARS_GITHUB_TOKEN }}
       - run: pnpm validate
       - name: Commit stars
         run: |
