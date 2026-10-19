@@ -49,13 +49,12 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm run update-stars
         env:
-          # A GitHub token, optional: this server's own token means nothing to GitHub.
-          GITHUB_TOKEN: ${{ secrets.STARS_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: pnpm validate
       - name: Commit stars
         run: |
-          git config user.name 'gitea-actions'
-          git config user.email 'actions@git.zacharyzhang.com'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898475+github-actions[bot]@users.noreply.github.com'
           git add apps
           if ! git diff --cached --quiet; then
             git commit -m 'Update GitHub stars'
