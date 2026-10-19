@@ -1,6 +1,6 @@
 # Ely GPUI Showcases
 
-Apps built with [Ely GPUI Components](https://git.zacharyzhang.com/ZacharyZhang-NY/Ely-GPUI-Components). The catalog feeds the Showcase page on the Ely site.
+Apps built with [Ely GPUI Components](https://github.com/ELY-Open-Source/Ely-GPUI-Components). The catalog feeds the Showcase page on the Ely site.
 
 ## Submit an app
 
@@ -59,7 +59,7 @@ Unknown fields fail validation.
 
 ## Stars
 
-On every push to `main` and each Monday, CI asks GitHub for each GitHub source's stars and commits any change. `starsUpdatedAt` moves only when the count does. It signs in with the `STARS_GITHUB_TOKEN` secret when set, a GitHub token, and asks anonymously otherwise. `pnpm run update-stars` does the same locally, `GITHUB_TOKEN` optional.
+On every push to `main` and each Monday, CI asks GitHub for each GitHub source's stars and commits any change. `starsUpdatedAt` moves only when the count does. It signs in with the workflow's `GITHUB_TOKEN`. `pnpm run update-stars` does the same locally, `GITHUB_TOKEN` optional: without it, GitHub is asked anonymously.
 
 ## How the site uses this
 
