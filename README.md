@@ -59,7 +59,7 @@ Unknown fields fail validation.
 
 ## Stars
 
-On every push to `main` and each Monday, CI asks GitHub for each GitHub source's stars and commits any change. `starsUpdatedAt` moves only when the count does. It signs in with the workflow's `GITHUB_TOKEN`. `pnpm run update-stars` does the same locally, `GITHUB_TOKEN` optional: without it, GitHub is asked anonymously.
+On every push to `main` and each Monday, CI asks GitHub for each GitHub source's stars and commits any change. `starsUpdatedAt` moves only when the count does. It signs in with the workflow's `GITHUB_TOKEN`, and runs the checks again on the commit it pushes, since that push starts no workflow by itself. `pnpm run update-stars` does the same locally, `GITHUB_TOKEN` optional: without it, GitHub is asked anonymously.
 
 ## How the site uses this
 

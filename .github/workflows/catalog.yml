@@ -37,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -52,6 +53,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: pnpm validate
       - name: Commit stars
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898475+github-actions[bot]@users.noreply.github.com'
@@ -59,4 +62,6 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m 'Update GitHub stars'
             git push origin HEAD:main
+            # A push with GITHUB_TOKEN starts no workflow, so the new head asks for its checks itself.
+            gh workflow run catalog.yml --ref main
           fi
