@@ -1,0 +1,18 @@
+{
+  "id": "ely-mark",
+  "name": "ElyMark",
+  "author": "ELY Open Source",
+  "description": "Markdown as you read it: edit the rendered page, with tables, task lists, math and Mermaid diagrams in place, or switch to the source. Files stay plain Markdown, written back only where you typed. Part of Ely Office.",
+  "category": "work",
+  "platforms": [
+    "macOS",
+    "Windows",
+    "Linux"
+  ],
+  "website": "https://office.elygpui.com/",
+  "source": "https://github.com/ELY-Open-Source/ElyOffice",
+  "publishedAt": "2026-10-21T06:00:00Z",
+  "previews": [
+    "notes.png"
+  ]
+}
