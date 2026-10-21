@@ -1,0 +1,18 @@
+{
+  "id": "ely-table",
+  "name": "ElyTable",
+  "author": "ELY Open Source",
+  "description": "Spreadsheets for Excel, OpenDocument and CSV files that work with the network off: formulas with completion, filters, charts and a cell inspector, on a LibreOffice engine under an Ely interface. Part of Ely Office.",
+  "category": "work",
+  "platforms": [
+    "macOS",
+    "Windows",
+    "Linux"
+  ],
+  "website": "https://office.elygpui.com/",
+  "source": "https://github.com/ELY-Open-Source/ElyOffice",
+  "publishedAt": "2026-10-21T06:00:00Z",
+  "previews": [
+    "sales.png"
+  ]
+}
