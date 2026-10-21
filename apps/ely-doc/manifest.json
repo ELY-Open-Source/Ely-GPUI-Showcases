@@ -1,0 +1,18 @@
+{
+  "id": "ely-doc",
+  "name": "ElyDoc",
+  "author": "ELY Open Source",
+  "description": "A word processor for Word and OpenDocument files that works with the network off: styles, tables, comments, tracked changes and an outline, on a LibreOffice engine under an Ely interface. Part of Ely Office.",
+  "category": "work",
+  "platforms": [
+    "macOS",
+    "Windows",
+    "Linux"
+  ],
+  "website": "https://office.elygpui.com/",
+  "source": "https://github.com/ELY-Open-Source/ElyOffice",
+  "publishedAt": "2026-10-21T06:00:00Z",
+  "previews": [
+    "brief.png"
+  ]
+}
