@@ -1,0 +1,18 @@
+{
+  "id": "ely-terminal",
+  "name": "ELYTerminal",
+  "author": "ELY Open Source",
+  "description": "A terminal on GPUI and Ely components: sessions on the left, Git or Files on the right, the kitty keyboard protocol, shell integration, blur and fourteen themes, with Ely peeking over the window to show what your agents are doing.",
+  "category": "terminal",
+  "platforms": [
+    "macOS",
+    "Windows",
+    "Linux"
+  ],
+  "website": null,
+  "source": "https://github.com/ELY-Open-Source/ELYTerminal",
+  "publishedAt": "2026-10-21T06:00:00Z",
+  "previews": [
+    "agents.png"
+  ]
+}
