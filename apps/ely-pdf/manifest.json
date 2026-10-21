@@ -1,0 +1,18 @@
+{
+  "id": "ely-pdf",
+  "name": "ElyPDF",
+  "author": "ELY Open Source",
+  "description": "Read, mark up, sign and fill PDFs with the network off, and find text in scans through OCR: pages, annotations, forms, bookmarks and digital signatures on MuPDF and Tesseract, under an Ely interface. Part of Ely Office.",
+  "category": "work",
+  "platforms": [
+    "macOS",
+    "Windows",
+    "Linux"
+  ],
+  "website": "https://office.elygpui.com/",
+  "source": "https://github.com/ELY-Open-Source/ElyOffice",
+  "publishedAt": "2026-10-21T06:00:00Z",
+  "previews": [
+    "guide.png"
+  ]
+}
