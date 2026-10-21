@@ -1,0 +1,18 @@
+{
+  "id": "ely-show",
+  "name": "ElyShow",
+  "author": "ELY Open Source",
+  "description": "Presentations for PowerPoint and OpenDocument files that work with the network off: slides, transitions, animations, notes and a presenter view, on a LibreOffice engine under an Ely interface. Part of Ely Office.",
+  "category": "work",
+  "platforms": [
+    "macOS",
+    "Windows",
+    "Linux"
+  ],
+  "website": "https://office.elygpui.com/",
+  "source": "https://github.com/ELY-Open-Source/ElyOffice",
+  "publishedAt": "2026-10-21T06:00:00Z",
+  "previews": [
+    "deck.png"
+  ]
+}
