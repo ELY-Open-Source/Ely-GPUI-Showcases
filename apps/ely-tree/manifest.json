@@ -1,0 +1,18 @@
+{
+  "id": "ely-tree",
+  "name": "ElyTree",
+  "author": "ELY Open Source",
+  "description": "A Git client without a terminal: stage by hunk or by line, commit, read the graph, blame, branch, merge and push. Every step that can lose work asks first, and it ships its own Git. Part of Ely Office.",
+  "category": "dev",
+  "platforms": [
+    "macOS",
+    "Windows",
+    "Linux"
+  ],
+  "website": "https://office.elygpui.com/",
+  "source": "https://github.com/ELY-Open-Source/ElyOffice",
+  "publishedAt": "2026-10-21T06:00:00Z",
+  "previews": [
+    "changes.png"
+  ]
+}
