@@ -1,0 +1,12 @@
+{
+  "id": "fintwind",
+  "name": "Fintwind",
+  "author": "roketskiy",
+  "description": "A native Windows workspace for OpenCode, built with Rust, GPUI and Ely components. Manage coding sessions, inspect agent activity and context, review Git changes, and explore model usage in one window.",
+  "category": "dev",
+  "platforms": ["Windows"],
+  "website": "https://fintwind.xyz/",
+  "source": "https://github.com/roketskiy/fintwind",
+  "publishedAt": "2026-10-24T00:00:00+08:00",
+  "previews": ["main.png", "review.png", "usage.png", "providers.png"]
+}
