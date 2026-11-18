@@ -1,0 +1,20 @@
+{
+  "id": "colab-playground",
+  "name": "Colab Playground",
+  "author": "ScarletKc",
+  "description": "A desktop app for the Google Colab CLI: accounts, GPU sessions with cost guards, port forwarding and plugins.",
+  "category": "dev",
+  "platforms": [
+    "macOS",
+    "Windows",
+    "Linux"
+  ],
+  "website": null,
+  "source": "https://github.com/scarletkc/colab-playground",
+  "publishedAt": "2026-11-18T04:41:55Z",
+  "previews": [
+    "overview.png",
+    "sessions.png",
+    "deploy.png"
+  ]
+}
